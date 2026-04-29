@@ -1,0 +1,90 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-background font-body;
+    background-color: #0b1326;
+    color: #dae2fd;
+  }
+}
+
+@layer utilities {
+  .material-symbols-outlined {
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    display: inline-block;
+    line-height: 1;
+    text-transform: none;
+    letter-spacing: normal;
+    word-wrap: normal;
+    white-space: nowrap;
+    direction: ltr;
+  }
+
+  .glass-panel {
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+  }
+
+  .glass-card {
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+  }
+
+  .gradient-bg {
+    background: radial-gradient(circle at 20% 30%, rgba(128, 131, 255, 0.15) 0%, transparent 40%),
+      radial-gradient(circle at 80% 70%, rgba(192, 193, 255, 0.1) 0%, transparent 40%);
+  }
+
+  .hero-gradient { 
+    background: radial-gradient(circle at 50% 0%, rgba(99, 102, 241, 0.15) 0%, rgba(11, 19, 38, 0) 70%); 
+  }
+
+  .btn-primary-gradient {
+    background: linear-gradient(135deg, #c0c1ff 0%, #8083ff 100%);
+  }
+
+  .abyssal-gradient {
+    background: linear-gradient(135deg, #c0c1ff 0%, #8083ff 100%);
+  }
+  
+  .primary-gradient {
+    background: linear-gradient(135deg, #c0c1ff 0%, #8083ff 100%);
+  }
+
+  .cta-gradient { 
+    background: linear-gradient(135deg, #c0c1ff 0%, #8083ff 100%); 
+  }
+
+  .no-line-rule { border: none !important; }
+  
+  .text-gradient { 
+    background: linear-gradient(135deg, #c0c1ff 0%, #8083ff 100%); 
+    -webkit-background-clip: text; 
+    -webkit-text-fill-color: transparent; 
+  }
+  
+  .bg-gradient-primary { 
+    background: linear-gradient(135deg, #c0c1ff 0%, #8083ff 100%); 
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+  }
+  
+  .pulse-glow {
+    box-shadow: 0 0 15px 2px rgba(192, 193, 255, 0.3);
+  }
+
+  .abyssal-glow {
+    text-shadow: 0 0 30px rgba(192, 193, 255, 0.3), 0 0 60px rgba(128, 131, 255, 0.1);
+  }
+}
