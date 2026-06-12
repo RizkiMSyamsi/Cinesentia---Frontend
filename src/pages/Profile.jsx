@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import ProfileMenu from '../components/ProfileMenu';
 
 function Profile() {
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const { user, refreshUser } = useAuth();
   const [fullName, setFullName] = useState(user?.full_name || '');
   const [email, setEmail] = useState(user?.email || '');
@@ -71,20 +72,53 @@ function Profile() {
   };
 
   return (
-    <div className="bg-surface text-on-surface min-h-screen">
+    <div className="bg-surface text-on-surface min-h-screen overflow-x-hidden overflow-y-auto">
       <nav className="fixed top-0 w-full z-50 bg-slate-950/80 backdrop-blur-xl flex justify-between items-center px-8 py-4 shadow-2xl shadow-black/40 tracking-tight">
-        <div className="text-xl font-bold tracking-tighter text-slate-100 uppercase">CineSentia</div>
-        <div className="hidden md:flex flex-1 justify-center items-center space-x-8">
-          <Link className="text-slate-400 hover:text-slate-200 transition-colors" to="/dashboard">Dashboard</Link>
-          <a className="text-slate-400 hover:text-slate-200 transition-colors" href="#">Features</a>
-          <a className="text-slate-400 hover:text-slate-200 transition-colors" href="#">About</a>
+        <div className="flex items-center gap-4">
+          <button onClick={() => setSidebarOpen(!sidebarOpen)} className="hidden md:flex items-center justify-center p-2 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-white/5 transition-colors">
+            <span className="material-symbols-outlined">menu</span>
+          </button>
+          <Link to="/dashboard" className="text-xl font-bold tracking-tighter text-slate-100 uppercase">CineSentia</Link>
         </div>
         <div className="flex items-center space-x-4">
           <ProfileMenu />
         </div>
       </nav>
 
-      <main className="pt-32 pb-20 px-8 max-w-7xl mx-auto">
+      {/* SideNavBar */}
+      <aside className={`fixed left-0 top-0 h-full w-64 z-40 bg-slate-900 text-sm flex flex-col py-20 border-r border-white/5 transition-transform duration-300 ease-in-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} hidden md:flex`}>
+        <div className="px-6 mb-10">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 rounded-xl primary-gradient flex items-center justify-center shadow-lg shadow-primary/20">
+              <span className="material-symbols-outlined text-on-primary">psychology</span>
+            </div>
+            <div>
+              <h2 className="text-slate-100 font-black text-base font-headline">AI Explorer</h2>
+              <p className="text-slate-500 text-xs font-label">Deep Dive Analysis</p>
+            </div>
+          </div>
+        </div>
+        <nav className="flex-1 space-y-2 px-4">
+          <Link className="flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-500 hover:text-slate-300 hover:bg-slate-800 transition-all font-label" to="/dashboard">
+            <span className="material-symbols-outlined">dashboard</span>
+            <span>Dashboard</span>
+          </Link>
+          <Link className="flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-500 hover:text-slate-300 hover:bg-slate-800 transition-all font-label" to="/analyze">
+            <span className="material-symbols-outlined">add_circle</span>
+            <span>New Analysis</span>
+          </Link>
+          <Link className="flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-500 hover:text-slate-300 hover:bg-slate-800 transition-all font-label" to="/history">
+            <span className="material-symbols-outlined">history</span>
+            <span>Riwayat</span>
+          </Link>
+          <Link className="flex items-center space-x-3 px-4 py-3 rounded-lg bg-indigo-500/10 text-indigo-400 border-r-4 border-indigo-500 transition-all font-label" to="/profile">
+            <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>person</span>
+            <span>Profile</span>
+          </Link>
+        </nav>
+      </aside>
+
+      <main className={`pt-32 pb-20 px-8 max-w-7xl w-full transition-all duration-300 ${sidebarOpen ? 'md:ml-64 mx-auto md:mx-0' : 'mx-auto'}`}>
         <div className="flex flex-col gap-12">
           {/* Profile Header */}
           <section className="relative w-full overflow-hidden rounded-xl bg-surface-container-low p-8 md:p-12 flex flex-col md:flex-row items-center gap-8 border border-outline-variant/5">
@@ -159,10 +193,10 @@ function Profile() {
                   <div>
                     <div className="flex justify-between text-xs font-bold mb-2">
                       <span className="text-on-surface-variant uppercase tracking-tighter">Daily Quota</span>
-                      <span className="text-on-surface">{quotaUsed} / {quotaLimit}</span>
+                      <span className="text-green-400 font-bold">Unlimited (No Limit)</span>
                     </div>
                     <div className="h-2 w-full bg-surface-container-low rounded-full overflow-hidden">
-                      <div className="h-full abyssal-gradient transition-all duration-500" style={{ width: `${quotaPct}%` }}></div>
+                      <div className="h-full bg-green-500 rounded-full w-full"></div>
                     </div>
                   </div>
                 </div>
@@ -224,10 +258,18 @@ function Profile() {
         </div>
       )}
 
-      <footer className="bg-[#0b1326] w-full py-12 px-8 border-t border-[#464554]/15">
-        <div className="flex flex-col md:flex-row justify-between items-center gap-6 max-w-7xl mx-auto">
-          <div className="text-lg font-bold text-[#dae2fd]">CineSentia</div>
-          <p className="text-sm text-[#c7c4d7]">© 2024 CineSentia. The Abyssal Curator of Sentiment.</p>
+      {/* Universal CineSentia Footer */}
+      <footer className={`border-t border-white/5 bg-[#070d19] py-12 px-8 transition-all duration-300 ${sidebarOpen ? 'md:ml-64' : 'md:ml-0'}`}>
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
+          <div className="flex flex-col items-center md:items-start gap-2">
+            <span className="text-lg font-bold tracking-tight text-[#dae2fd] uppercase font-headline">CineSentia</span>
+            <p className="text-xs text-slate-500 font-label">© 2024 CineSentia. Deep Ocean Cinematic Sentiment Analytics.</p>
+          </div>
+          <div className="flex gap-8 text-xs font-label">
+            <Link className="text-slate-400 hover:text-indigo-400 transition-colors uppercase tracking-wider" to="/">Privacy Policy</Link>
+            <Link className="text-slate-400 hover:text-indigo-400 transition-colors uppercase tracking-wider" to="/">Terms of Service</Link>
+            <Link className="text-slate-400 hover:text-indigo-400 transition-colors uppercase tracking-wider" to="/">Support</Link>
+          </div>
         </div>
       </footer>
     </div>

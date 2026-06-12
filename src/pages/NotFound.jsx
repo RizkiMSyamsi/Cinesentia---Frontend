@@ -4,14 +4,14 @@ import ProfileMenu from '../components/ProfileMenu';
 
 function NotFound() {
   return (
-    <div className="bg-surface text-on-surface font-body selection:bg-primary/30 min-h-screen flex flex-col">
+    <div className="bg-surface text-on-surface font-body selection:bg-primary/30 min-h-screen flex flex-col overflow-x-hidden overflow-y-auto">
       {/* TopNavBar */}
       <nav className="fixed top-0 w-full z-50 bg-slate-950/80 backdrop-blur-xl flex justify-between items-center px-8 py-4 max-w-full mx-auto shadow-2xl shadow-black/40 font-inter tracking-tight">
         <div className="text-xl font-bold tracking-tighter text-slate-100 uppercase">CineSentia</div>
         <div className="hidden md:flex flex-1 justify-center items-center space-x-8">
           <Link className="text-slate-400 hover:text-slate-200 transition-colors" to="/dashboard">Dashboard</Link>
-          <a className="text-slate-400 hover:text-slate-200 transition-colors" href="#">Features</a>
-          <a className="text-slate-400 hover:text-slate-200 transition-colors" href="#">About</a>
+          <Link className="text-slate-400 hover:text-slate-200 transition-colors" to="/">Features</Link>
+          <Link className="text-slate-400 hover:text-slate-200 transition-colors" to="/">About</Link>
         </div>
         <div className="flex items-center space-x-4">
           <Link className="hidden sm:flex px-4 py-2 bg-indigo-500/10 text-indigo-400 rounded-lg font-semibold hover:bg-indigo-500/20 transition-all" to="/login">Login</Link>
@@ -23,7 +23,7 @@ function NotFound() {
       </nav>
 
       {/* Main Content Canvas */}
-      <main className="relative flex-grow flex items-center justify-center overflow-hidden px-6">
+      <main className="relative flex-grow flex items-center justify-center overflow-x-hidden px-6">
         {/* Ambient Background Textures */}
         <div className="absolute inset-0 z-0 pointer-events-none">
           <div className="absolute top-1/4 -left-20 w-96 h-96 bg-primary/10 blur-[120px] rounded-full"></div>
@@ -63,10 +63,10 @@ function NotFound() {
             <p className="font-['Inter'] text-sm tracking-wide text-[#c7c4d7]">© 2024 CineSentia. Exploring the depths of cinematic data.</p>
           </div>
           <div className="flex flex-wrap justify-center gap-8">
-            <a className="font-['Inter'] text-sm tracking-wide text-[#c7c4d7] hover:text-[#dae2fd] transition-colors opacity-80 hover:opacity-100" href="#">Depth Chart</a>
-            <a className="font-['Inter'] text-sm tracking-wide text-[#c7c4d7] hover:text-[#dae2fd] transition-colors opacity-80 hover:opacity-100" href="#">Submerge API</a>
-            <a className="font-['Inter'] text-sm tracking-wide text-[#c7c4d7] hover:text-[#dae2fd] transition-colors opacity-80 hover:opacity-100" href="#">Privacy Protocol</a>
-            <a className="font-['Inter'] text-sm tracking-wide text-[#c7c4d7] hover:text-[#dae2fd] transition-colors opacity-80 hover:opacity-100" href="#">Signal Support</a>
+            <Link className="font-['Inter'] text-sm tracking-wide text-[#c7c4d7] hover:text-[#dae2fd] transition-colors opacity-80 hover:opacity-100" to="/">Depth Chart</Link>
+            <Link className="font-['Inter'] text-sm tracking-wide text-[#c7c4d7] hover:text-[#dae2fd] transition-colors opacity-80 hover:opacity-100" to="/">Submerge API</Link>
+            <Link className="font-['Inter'] text-sm tracking-wide text-[#c7c4d7] hover:text-[#dae2fd] transition-colors opacity-80 hover:opacity-100" to="/">Privacy Protocol</Link>
+            <Link className="font-['Inter'] text-sm tracking-wide text-[#c7c4d7] hover:text-[#dae2fd] transition-colors opacity-80 hover:opacity-100" to="/">Signal Support</Link>
           </div>
           <div className="flex gap-4">
             <button className="material-symbols-outlined text-[#c7c4d7] hover:text-[#dae2fd]">language</button>

@@ -1,70 +1,34 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import api from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import ProfileMenu from '../components/ProfileMenu';
 
-function Dashboard() {
+function History() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const { user } = useAuth();
   const navigate = useNavigate();
-  const qc = useQueryClient();
-  const [youtubeUrl, setYoutubeUrl] = useState('');
-  const [urlError, setUrlError] = useState('');
-  const [maxComments, setMaxComments] = useState(100);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [page, setPage] = useState(1);
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
 
-  // Fetch quota
-  const { data: quotaData } = useQuery({
-    queryKey: ['quota'],
+  // Fetch all analyses
+  const { data: analysesData, isLoading } = useQuery({
+    queryKey: ['analyses', page, statusFilter],
     queryFn: async () => {
-      const { data } = await api.get('/quota');
+      let url = `/analyses?page=${page}&limit=9`;
+      if (statusFilter !== 'all') {
+        url += `&status=${statusFilter}`;
+      }
+      const { data } = await api.get(url);
       return data;
     },
   });
-
-  // Fetch recent analyses
-  const { data: analysesData, isLoading: analysesLoading } = useQuery({
-    queryKey: ['analyses', { limit: 6 }],
-    queryFn: async () => {
-      const { data } = await api.get('/analyses?limit=6');
-      return data;
-    },
-  });
-
-  // Submit new analysis
-  const submitMutation = useMutation({
-    mutationFn: async ({ url, maxComments }) => {
-      const { data } = await api.post('/analyses', { youtube_url: url, max_comments: maxComments });
-      return data;
-    },
-    onSuccess: (data) => {
-      qc.invalidateQueries({ queryKey: ['analyses'] });
-      qc.invalidateQueries({ queryKey: ['quota'] });
-      navigate(`/analyze?id=${data.analysis_id}`);
-    },
-    onError: (err) => {
-      setUrlError(err.response?.data?.error || 'Failed to start analysis.');
-    },
-  });
-
-  const handleAnalyze = (e) => {
-    e.preventDefault();
-    setUrlError('');
-    if (!youtubeUrl.trim()) {
-      setUrlError('Please enter a YouTube URL.');
-      return;
-    }
-    submitMutation.mutate({ url: youtubeUrl.trim(), maxComments });
-  };
-
-  const quotaUsed = quotaData?.daily_quota_used ?? 0;
-  const quotaLimit = quotaData?.daily_quota_limit ?? 3;
-  const quotaRemaining = quotaData?.quota_remaining ?? (quotaLimit - quotaUsed);
-  const quotaPct = quotaLimit > 0 ? ((quotaUsed / quotaLimit) * 100) : 0;
 
   const analyses = analysesData?.analyses ?? [];
+  const totalPages = analysesData?.pages ?? 1;
+  const totalItems = analysesData?.total ?? 0;
 
   // Format date helper
   const formatDate = (dateStr) => {
@@ -92,7 +56,12 @@ function Dashboard() {
     return { label: `${Math.round(a.neutral_pct)}% Netral`, color: 'primary' };
   };
 
-  const firstName = user?.full_name?.split(' ')[0] || 'User';
+  // Client-side search filtering
+  const filteredAnalyses = analyses.filter((analysis) => {
+    const titleMatch = (analysis.video_title || '').toLowerCase().includes(searchQuery.toLowerCase());
+    const channelMatch = (analysis.channel_name || '').toLowerCase().includes(searchQuery.toLowerCase());
+    return titleMatch || channelMatch;
+  });
 
   return (
     <div className="overflow-x-hidden overflow-y-auto min-h-screen font-body text-on-surface bg-background">
@@ -105,9 +74,6 @@ function Dashboard() {
           <Link to="/dashboard" className="text-xl font-bold tracking-tighter text-slate-100 font-headline">CineSentia</Link>
         </div>
         <div className="flex items-center space-x-4">
-          <div className="relative hidden sm:block">
-            <input className="bg-surface-container-low border border-outline-variant/15 rounded-lg py-1.5 px-4 text-sm focus:ring-1 focus:ring-primary focus:outline-none" placeholder="Search insights..." type="text" />
-          </div>
           <ProfileMenu />
         </div>
       </nav>
@@ -127,16 +93,16 @@ function Dashboard() {
         </div>
 
         <nav className="flex-1 space-y-2 px-4">
-          <Link className="flex items-center space-x-3 px-4 py-3 rounded-lg bg-indigo-500/10 text-indigo-400 border-r-4 border-indigo-500 transition-all font-label" to="/dashboard">
-            <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>dashboard</span>
+          <Link className="flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-500 hover:text-slate-300 hover:bg-slate-800 transition-all font-label" to="/dashboard">
+            <span className="material-symbols-outlined">dashboard</span>
             <span>Dashboard</span>
           </Link>
           <Link className="flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-500 hover:text-slate-300 hover:bg-slate-800 transition-all font-label" to="/analyze">
             <span className="material-symbols-outlined">add_circle</span>
             <span>New Analysis</span>
           </Link>
-          <Link className="flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-500 hover:text-slate-300 hover:bg-slate-800 transition-all font-label" to="/history">
-            <span className="material-symbols-outlined">history</span>
+          <Link className="flex items-center space-x-3 px-4 py-3 rounded-lg bg-indigo-500/10 text-indigo-400 border-r-4 border-indigo-500 transition-all font-label" to="/history">
+            <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>history</span>
             <span>Riwayat</span>
           </Link>
           <Link className="flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-500 hover:text-slate-300 hover:bg-slate-800 transition-all font-label" to="/profile">
@@ -144,112 +110,62 @@ function Dashboard() {
             <span>Profile</span>
           </Link>
         </nav>
-
-        <div className="px-6 mt-auto pb-8">
-          <Link to="/analyze" className="block w-full py-3 primary-gradient text-on-primary-container font-semibold rounded-lg shadow-lg shadow-primary/20 scale-95 active:scale-90 transition-all text-center">
-            New Analysis
-          </Link>
-        </div>
       </aside>
 
       {/* Main Content Canvas */}
       <main className={`pt-28 pb-20 md:pb-12 px-6 md:px-12 min-h-screen bg-surface transition-all duration-300 ${sidebarOpen ? 'lg:ml-64' : 'lg:ml-0'}`}>
-        {/* Header Greeting */}
-        <header className="flex flex-col md:flex-row md:items-end justify-between mb-12 space-y-6 md:space-y-0">
-          <div>
-            <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-on-surface mb-2 font-headline">Selamat datang, {firstName}! 👋</h1>
-            <p className="text-on-surface-variant text-lg">Siap untuk menyelami sentimen audiens hari ini?</p>
-          </div>
+        <header className="mb-12">
+          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-on-surface mb-2 font-headline">Riwayat Analisis 📜</h1>
+          <p className="text-on-surface-variant text-lg">Kelola dan lihat kembali hasil sentiment analysis video trailer film Anda.</p>
         </header>
 
-        {/* Analyze Section */}
-        <section className="mb-16">
-          <div className="glass-panel p-8 md:p-12 rounded-xl relative shadow-2xl border border-white/5">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 blur-[120px] rounded-full -mr-32 -mt-32"></div>
-            <div className="relative z-10 max-w-3xl">
-              <h2 className="text-2xl font-bold mb-6 text-on-surface flex items-center font-headline">
-                <span className="material-symbols-outlined mr-2 text-primary">search</span>
-                Mulai Analisis Baru
-              </h2>
-              <form onSubmit={handleAnalyze} className="flex flex-col md:flex-row gap-4 items-stretch">
-                <div className="relative flex-grow">
-                  <input
-                    className="w-full bg-surface-container-lowest border border-outline-variant/15 text-on-surface rounded-xl py-4 px-6 focus:ring-2 focus:ring-primary focus:outline-none transition-all text-lg placeholder:text-outline/50 font-body"
-                    placeholder="Masukkan URL YouTube..."
-                    type="text"
-                    value={youtubeUrl}
-                    onChange={(e) => { setYoutubeUrl(e.target.value); setUrlError(''); }}
-                  />
-                </div>
-                <div className="relative min-w-[200px]">
-                  <button
-                    type="button"
-                    onClick={() => setDropdownOpen(!dropdownOpen)}
-                    className="w-full h-full bg-surface-container-lowest border border-outline-variant/15 text-on-surface rounded-xl py-4 px-6 focus:ring-2 focus:ring-primary focus:outline-none transition-all text-lg font-body flex items-center justify-between gap-2"
-                  >
-                    <span>{maxComments} Komentar</span>
-                    <span className={`material-symbols-outlined transition-transform duration-300 ${dropdownOpen ? 'rotate-180 text-primary' : 'text-slate-400'}`}>
-                      keyboard_arrow_down
-                    </span>
-                  </button>
-                  {dropdownOpen && (
-                    <>
-                      <div className="fixed inset-0 z-40" onClick={() => setDropdownOpen(false)}></div>
-                      <ul className="absolute left-0 right-0 bottom-full mb-2 z-50 bg-slate-950/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl py-2 max-h-60 overflow-y-auto animate-fade-in divide-y divide-white/5">
-                        {[10, 100, 1000, 5000, 10000].map((val) => (
-                          <li key={val}>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setMaxComments(val);
-                                setDropdownOpen(false);
-                              }}
-                              className={`w-full text-left px-6 py-3 text-sm transition-all hover:bg-indigo-500/10 hover:text-indigo-400 flex items-center justify-between ${maxComments === val ? 'text-indigo-400 font-bold bg-indigo-500/5' : 'text-on-surface-variant'}`}
-                            >
-                              <span>{val} Komentar</span>
-                              {maxComments === val && (
-                                <span className="material-symbols-outlined text-sm text-indigo-400">check</span>
-                              )}
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
-                    </>
-                  )}
-                </div>
-                <button
-                  className={`primary-gradient text-on-primary-container font-bold px-10 py-4 rounded-xl shadow-xl shadow-primary/10 hover:scale-[1.02] active:scale-95 transition-all text-lg flex items-center justify-center ${submitMutation.isPending ? 'opacity-70 cursor-not-allowed' : ''}`}
-                  type="submit"
-                  disabled={submitMutation.isPending}
-                >
-                  {submitMutation.isPending ? (
-                    <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                  ) : (
-                    'Analisis'
-                  )}
-                </button>
-              </form>
-              {urlError && (
-                <p className="text-error text-sm mt-3 flex items-center gap-1">
-                  <span className="material-symbols-outlined text-sm">error</span>
-                  {urlError}
-                </p>
-              )}
-              <p className="text-on-surface-variant text-sm mt-4 italic">Contoh: https://www.youtube.com/watch?v=dQw4w9WgXcQ</p>
-            </div>
+        {/* Filters and Search Bar */}
+        <section className="mb-8 flex flex-col md:flex-row justify-between gap-4">
+          {/* Status Filters */}
+          <div className="flex flex-wrap gap-2">
+            {[
+              { id: 'all', label: 'Semua Status' },
+              { id: 'completed', label: 'Selesai' },
+              { id: 'failed', label: 'Gagal' },
+              { id: 'queued', label: 'Mengantri' },
+              { id: 'fetching', label: 'Scraping' },
+              { id: 'analyzing', label: 'Menganalisis' },
+            ].map((filter) => (
+              <button
+                key={filter.id}
+                onClick={() => { setStatusFilter(filter.id); setPage(1); }}
+                className={`text-xs px-4 py-2 rounded-full border transition-all font-semibold ${
+                  statusFilter === filter.id
+                    ? 'border-indigo-500 text-indigo-400 bg-indigo-500/10'
+                    : 'border-white/10 text-on-surface-variant hover:border-white/20'
+                }`}
+              >
+                {filter.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Search Input */}
+          <div className="relative min-w-[280px]">
+            <input
+              type="text"
+              placeholder="Cari judul film..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-surface-container-low border border-outline-variant/15 rounded-xl py-2 pl-4 pr-10 text-sm focus:ring-1 focus:ring-primary focus:outline-none placeholder:text-outline/50 font-body text-on-surface"
+            />
+            <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 text-md">
+              search
+            </span>
           </div>
         </section>
 
-        {/* History Grid (Bento Style) */}
+        {/* History Bento List */}
         <section>
-          <div className="flex items-center justify-between mb-8">
-            <h3 className="text-xl font-bold tracking-tight text-on-surface font-headline">Riwayat Analisis</h3>
-            <Link to="/history" className="text-primary text-sm font-medium hover:underline font-label">Lihat Semua</Link>
-          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {analysesLoading ? (
+            {isLoading ? (
               // Loading skeletons
-              Array.from({ length: 3 }).map((_, i) => (
+              Array.from({ length: 6 }).map((_, i) => (
                 <div key={i} className="bg-surface-container-low rounded-xl overflow-hidden border border-outline-variant/5 shadow-lg">
                   <div className="relative h-48 bg-surface-container-high animate-pulse overflow-hidden flex items-center justify-center">
                     <span className="material-symbols-outlined text-primary/40 text-5xl animate-spin">sync</span>
@@ -260,19 +176,21 @@ function Dashboard() {
                   </div>
                 </div>
               ))
-            ) : analyses.length === 0 ? (
-              <div className="col-span-full flex flex-col items-center justify-center py-16 text-center">
-                <span className="material-symbols-outlined text-5xl text-on-surface-variant/30 mb-4">science</span>
-                <h4 className="text-lg font-bold text-on-surface mb-2">Belum ada analisis</h4>
-                <p className="text-on-surface-variant text-sm">Mulai analisis pertama Anda dengan memasukkan URL YouTube di atas.</p>
+            ) : filteredAnalyses.length === 0 ? (
+              <div className="col-span-full flex flex-col items-center justify-center py-24 text-center">
+                <span className="material-symbols-outlined text-6xl text-on-surface-variant/30 mb-4">history</span>
+                <h4 className="text-xl font-bold text-on-surface mb-2">Tidak ditemukan riwayat analisis</h4>
+                <p className="text-on-surface-variant text-sm max-w-md mx-auto">
+                  {searchQuery ? 'Coba cari dengan kata kunci lain atau ubah filter status Anda.' : 'Anda belum pernah melakukan analisis video film trailer.'}
+                </p>
               </div>
             ) : (
-              analyses.map((analysis) => {
+              filteredAnalyses.map((analysis) => {
                 const isProcessing = analysis.status !== 'completed' && analysis.status !== 'failed';
 
                 if (isProcessing) {
                   return (
-                    <Link to={`/analyze?id=${analysis.id}`} key={analysis.id} className="bg-surface-container-low rounded-xl overflow-hidden border border-outline-variant/5 shadow-lg group">
+                    <Link to={`/analyze?id=${analysis.id}`} key={analysis.id} className="bg-surface-container-low rounded-xl overflow-hidden border border-outline-variant/5 shadow-lg group hover:scale-[1.01] duration-200">
                       <div className="relative h-48 bg-surface-container-high animate-pulse overflow-hidden flex items-center justify-center">
                         <span className="material-symbols-outlined text-primary/40 text-5xl animate-spin">sync</span>
                         <div className="absolute bottom-4 left-4 bg-surface-dim/80 backdrop-blur px-3 py-1 rounded text-[10px] font-bold text-primary uppercase tracking-widest font-label">
@@ -280,13 +198,37 @@ function Dashboard() {
                         </div>
                       </div>
                       <div className="p-6">
-                        <h4 className="text-on-surface font-bold text-lg mb-1 line-clamp-1 font-headline">{analysis.video_title || 'Analyzing...'}</h4>
-                        <p className="text-on-surface-variant text-sm mb-3">{analysis.progress}% complete</p>
+                        <h4 className="text-on-surface font-bold text-lg mb-1 line-clamp-1 font-headline">{analysis.video_title || 'Menganalisis...'}</h4>
+                        <p className="text-on-surface-variant text-sm mb-3">{analysis.progress}% selesai</p>
                         <div className="w-full bg-surface-container-high h-1.5 rounded-full overflow-hidden">
                           <div className="primary-gradient h-full rounded-full transition-all duration-300" style={{ width: `${analysis.progress}%` }}></div>
                         </div>
                       </div>
                     </Link>
+                  );
+                }
+
+                if (analysis.status === 'failed') {
+                  return (
+                    <div key={analysis.id} className="bg-surface-container rounded-xl overflow-hidden border border-red-500/10 shadow-lg p-6 flex flex-col justify-between min-h-[220px]">
+                      <div>
+                        <div className="flex justify-between items-start mb-4">
+                          <span className="px-3 py-1 rounded-full bg-red-500/10 border border-red-500/20 text-xs font-bold text-red-400 font-label flex items-center">
+                            <span className="w-1.5 h-1.5 rounded-full bg-red-500 mr-2"></span>
+                            Gagal
+                          </span>
+                          <span className="text-xs text-on-surface-variant font-label">{formatDate(analysis.created_at)}</span>
+                        </div>
+                        <h4 className="text-on-surface font-bold text-lg mb-2 line-clamp-1 font-headline">{analysis.video_title || 'Analisis Gagal'}</h4>
+                        <p className="text-xs text-on-surface-variant/80 line-clamp-2">{analysis.error_message || 'Terjadi kesalahan internal pada pipeline model.'}</p>
+                      </div>
+                      <div className="flex justify-end gap-2 pt-4 border-t border-outline-variant/10">
+                        <Link to="/analyze" className="text-xs text-primary font-bold hover:underline flex items-center font-label">
+                          Ulangi Analisis
+                          <span className="material-symbols-outlined ml-1 text-sm">replay</span>
+                        </Link>
+                      </div>
+                    </div>
                   );
                 }
 
@@ -336,6 +278,33 @@ function Dashboard() {
             )}
           </div>
         </section>
+
+        {/* Paginator */}
+        {totalPages > 1 && (
+          <section className="mt-12 flex justify-center items-center gap-2">
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className={`p-2 rounded-xl bg-surface-container border border-outline-variant/10 text-on-surface transition-all flex items-center ${
+                page === 1 ? 'opacity-40 cursor-not-allowed' : 'hover:bg-indigo-500/10 hover:text-indigo-400'
+              }`}
+            >
+              <span className="material-symbols-outlined text-md">chevron_left</span>
+            </button>
+            <span className="text-sm text-on-surface-variant font-semibold px-4 font-label">
+              Halaman {page} dari {totalPages}
+            </span>
+            <button
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages}
+              className={`p-2 rounded-xl bg-surface-container border border-outline-variant/10 text-on-surface transition-all flex items-center ${
+                page === totalPages ? 'opacity-40 cursor-not-allowed' : 'hover:bg-indigo-500/10 hover:text-indigo-400'
+              }`}
+            >
+              <span className="material-symbols-outlined text-md">chevron_right</span>
+            </button>
+          </section>
+        )}
       </main>
 
       {/* Universal CineSentia Footer */}
@@ -355,13 +324,17 @@ function Dashboard() {
 
       {/* BottomNavBar (Mobile Only) */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-slate-950/90 backdrop-blur-xl border-t border-white/5 flex justify-around items-center py-4 px-6 z-50">
-        <Link className="flex flex-col items-center space-y-1 text-indigo-400 group" to="/dashboard">
-          <span className="material-symbols-outlined group-hover:scale-110 transition-transform" style={{ fontVariationSettings: "'FILL' 1" }}>dashboard</span>
-          <span className="text-[10px] font-bold font-label">Dashboard</span>
+        <Link className="flex flex-col items-center space-y-1 text-slate-500 hover:text-slate-300 transition-colors group" to="/dashboard">
+          <span className="material-symbols-outlined group-hover:scale-110 transition-transform">dashboard</span>
+          <span className="text-[10px] font-label">Dashboard</span>
         </Link>
         <Link className="flex flex-col items-center space-y-1 text-slate-500 hover:text-slate-300 transition-colors group" to="/analyze">
           <span className="material-symbols-outlined group-hover:scale-110 transition-transform">add_circle</span>
           <span className="text-[10px] font-label">Analyze</span>
+        </Link>
+        <Link className="flex flex-col items-center space-y-1 text-indigo-400 group" to="/history">
+          <span className="material-symbols-outlined group-hover:scale-110 transition-transform" style={{ fontVariationSettings: "'FILL' 1" }}>history</span>
+          <span className="text-[10px] font-bold font-label">Riwayat</span>
         </Link>
         <Link className="flex flex-col items-center space-y-1 text-slate-500 hover:text-slate-300 transition-colors group" to="/profile">
           <span className="material-symbols-outlined group-hover:scale-110 transition-transform">person</span>
@@ -372,4 +345,4 @@ function Dashboard() {
   );
 }
 
-export default Dashboard;
+export default History;

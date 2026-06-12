@@ -30,6 +30,7 @@ function getStepState(stepKey, currentStatus) {
 }
 
 function Analyze() {
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [searchParams] = useSearchParams();
   const analysisId = searchParams.get('id');
   const navigate = useNavigate();
@@ -37,10 +38,12 @@ function Analyze() {
   // ── Submit mode state ──
   const [youtubeUrl, setYoutubeUrl] = useState('');
   const [urlError, setUrlError] = useState('');
+  const [maxComments, setMaxComments] = useState(100);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
 
   const submitMutation = useMutation({
-    mutationFn: async (url) => {
-      const { data } = await api.post('/analyses', { youtube_url: url });
+    mutationFn: async ({ url, maxComments }) => {
+      const { data } = await api.post('/analyses', { youtube_url: url, max_comments: maxComments });
       return data;
     },
     onSuccess: (data) => {
@@ -58,7 +61,7 @@ function Analyze() {
       setUrlError('Please enter a YouTube URL.');
       return;
     }
-    submitMutation.mutate(youtubeUrl.trim());
+    submitMutation.mutate({ url: youtubeUrl.trim(), maxComments });
   };
 
   // ── Polling mode ──
@@ -92,14 +95,14 @@ function Analyze() {
   // ── Submit mode UI ──
   if (!analysisId) {
     return (
-      <div className="bg-surface text-on-surface font-body selection:bg-primary/30 selection:text-primary min-h-screen flex flex-col">
+      <div className="bg-surface text-on-surface font-body selection:bg-primary/30 selection:text-primary min-h-screen flex flex-col overflow-x-hidden overflow-y-auto">
         <header className="fixed top-0 w-full z-50">
           <nav className="w-full bg-slate-950/80 backdrop-blur-xl flex justify-between items-center px-8 py-4 shadow-2xl shadow-black/40 font-inter tracking-tight">
-            <div className="text-xl font-bold tracking-tighter text-slate-100 uppercase">CineSentia</div>
-            <div className="hidden md:flex flex-1 justify-center items-center space-x-8">
-              <Link className="text-slate-400 hover:text-slate-200 transition-colors" to="/dashboard">Dashboard</Link>
-              <a className="text-slate-400 hover:text-slate-200 transition-colors" href="#">Features</a>
-              <a className="text-slate-400 hover:text-slate-200 transition-colors" href="#">About</a>
+            <div className="flex items-center gap-4">
+              <button onClick={() => setSidebarOpen(!sidebarOpen)} className="hidden lg:flex items-center justify-center p-2 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-white/5 transition-colors">
+                <span className="material-symbols-outlined">menu</span>
+              </button>
+              <Link to="/dashboard" className="text-xl font-bold tracking-tighter text-slate-100 uppercase">CineSentia</Link>
             </div>
             <div className="flex items-center space-x-4">
               <ProfileMenu />
@@ -107,7 +110,40 @@ function Analyze() {
           </nav>
         </header>
 
-        <main className="flex-grow pt-32 pb-20 px-8 max-w-4xl mx-auto w-full">
+        {/* SideNavBar */}
+        <aside className={`fixed left-0 top-0 h-full w-64 z-40 bg-slate-900 text-sm flex flex-col py-20 border-r border-white/5 transition-transform duration-300 ease-in-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} hidden lg:flex`}>
+          <div className="px-6 mb-10">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 rounded-xl primary-gradient flex items-center justify-center shadow-lg shadow-primary/20">
+                <span className="material-symbols-outlined text-on-primary">psychology</span>
+              </div>
+              <div>
+                <h2 className="text-slate-100 font-black text-base font-headline">AI Explorer</h2>
+                <p className="text-slate-500 text-xs font-label">Deep Dive Analysis</p>
+              </div>
+            </div>
+          </div>
+          <nav className="flex-1 space-y-2 px-4">
+            <Link className="flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-500 hover:text-slate-300 hover:bg-slate-800 transition-all font-label" to="/dashboard">
+              <span className="material-symbols-outlined">dashboard</span>
+              <span>Dashboard</span>
+            </Link>
+            <Link className="flex items-center space-x-3 px-4 py-3 rounded-lg bg-indigo-500/10 text-indigo-400 border-r-4 border-indigo-500 transition-all font-label" to="/analyze">
+              <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>add_circle</span>
+              <span>New Analysis</span>
+            </Link>
+            <Link className="flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-500 hover:text-slate-300 hover:bg-slate-800 transition-all font-label" to="/history">
+              <span className="material-symbols-outlined">history</span>
+              <span>Riwayat</span>
+            </Link>
+            <Link className="flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-500 hover:text-slate-300 hover:bg-slate-800 transition-all font-label" to="/profile">
+              <span className="material-symbols-outlined">person</span>
+              <span>Profile</span>
+            </Link>
+          </nav>
+        </aside>
+
+        <main className={`flex-grow pt-32 pb-20 px-8 max-w-4xl w-full transition-all duration-300 ${sidebarOpen ? 'lg:ml-64 mx-auto lg:mx-0' : 'mx-auto'}`}>
           <div className="mb-12">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-2 h-2 rounded-full bg-primary pulse-glow"></div>
@@ -118,7 +154,7 @@ function Analyze() {
             </h1>
           </div>
 
-          <div className="glass-panel p-8 md:p-12 rounded-xl relative overflow-hidden shadow-2xl border border-white/5">
+          <div className="glass-panel p-8 md:p-12 rounded-xl relative shadow-2xl border border-white/5">
             <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 blur-[120px] rounded-full -mr-32 -mt-32"></div>
             <div className="relative z-10">
               <h2 className="text-2xl font-bold mb-2 text-on-surface flex items-center font-headline">
@@ -126,8 +162,8 @@ function Analyze() {
                 YouTube URL
               </h2>
               <p className="text-on-surface-variant mb-6">Paste a YouTube video URL and we'll analyze its comment sentiment.</p>
-              <form onSubmit={handleSubmit} className="flex flex-col md:flex-row gap-4">
-                <div className="relative flex-1">
+              <form onSubmit={handleSubmit} className="flex flex-col md:flex-row gap-4 items-stretch">
+                <div className="relative flex-grow">
                   <input
                     className="w-full bg-surface-container-lowest border border-outline-variant/15 text-on-surface rounded-xl py-4 px-6 focus:ring-2 focus:ring-primary focus:outline-none transition-all text-lg placeholder:text-outline/50 font-body"
                     placeholder="https://www.youtube.com/watch?v=..."
@@ -135,6 +171,42 @@ function Analyze() {
                     value={youtubeUrl}
                     onChange={(e) => { setYoutubeUrl(e.target.value); setUrlError(''); }}
                   />
+                </div>
+                <div className="relative min-w-[200px]">
+                  <button
+                    type="button"
+                    onClick={() => setDropdownOpen(!dropdownOpen)}
+                    className="w-full h-full bg-surface-container-lowest border border-outline-variant/15 text-on-surface rounded-xl py-4 px-6 focus:ring-2 focus:ring-primary focus:outline-none transition-all text-lg font-body flex items-center justify-between gap-2"
+                  >
+                    <span>{maxComments} Komentar</span>
+                    <span className={`material-symbols-outlined transition-transform duration-300 ${dropdownOpen ? 'rotate-180 text-primary' : 'text-slate-400'}`}>
+                      keyboard_arrow_down
+                    </span>
+                  </button>
+                  {dropdownOpen && (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => setDropdownOpen(false)}></div>
+                      <ul className="absolute left-0 right-0 bottom-full mb-2 z-50 bg-slate-950/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl py-2 max-h-60 overflow-y-auto animate-fade-in divide-y divide-white/5">
+                        {[10, 100, 1000, 5000, 10000].map((val) => (
+                          <li key={val}>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setMaxComments(val);
+                                setDropdownOpen(false);
+                              }}
+                              className={`w-full text-left px-6 py-3 text-sm transition-all hover:bg-indigo-500/10 hover:text-indigo-400 flex items-center justify-between ${maxComments === val ? 'text-indigo-400 font-bold bg-indigo-500/5' : 'text-on-surface-variant'}`}
+                            >
+                              <span>{val} Komentar</span>
+                              {maxComments === val && (
+                                <span className="material-symbols-outlined text-sm text-indigo-400">check</span>
+                              )}
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    </>
+                  )}
                 </div>
                 <button
                   className={`primary-gradient text-on-primary-container font-bold px-10 py-4 rounded-xl shadow-xl shadow-primary/10 hover:scale-[1.02] active:scale-95 transition-all text-lg flex items-center justify-center gap-2 ${submitMutation.isPending ? 'opacity-70 cursor-not-allowed' : ''}`}
@@ -171,15 +243,15 @@ function Analyze() {
                       'Analyzing...';
 
   return (
-    <div className="bg-surface text-on-surface font-body selection:bg-primary/30 selection:text-primary min-h-screen flex flex-col">
+    <div className="bg-surface text-on-surface font-body selection:bg-primary/30 selection:text-primary min-h-screen flex flex-col overflow-x-hidden overflow-y-auto">
       {/* TopNavBar */}
       <header className="fixed top-0 w-full z-50">
         <nav className="w-full bg-slate-950/80 backdrop-blur-xl flex justify-between items-center px-8 py-4 shadow-2xl shadow-black/40 font-inter tracking-tight">
-          <div className="text-xl font-bold tracking-tighter text-slate-100 uppercase">CineSentia</div>
-          <div className="hidden md:flex flex-1 justify-center items-center space-x-8">
-            <Link className="text-slate-400 hover:text-slate-200 transition-colors" to="/dashboard">Dashboard</Link>
-            <a className="text-slate-400 hover:text-slate-200 transition-colors" href="#">Features</a>
-            <a className="text-slate-400 hover:text-slate-200 transition-colors" href="#">About</a>
+          <div className="flex items-center gap-4">
+            <button onClick={() => setSidebarOpen(!sidebarOpen)} className="hidden lg:flex items-center justify-center p-2 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-white/5 transition-colors">
+              <span className="material-symbols-outlined">menu</span>
+            </button>
+            <Link to="/dashboard" className="text-xl font-bold tracking-tighter text-slate-100 uppercase">CineSentia</Link>
           </div>
           <div className="flex items-center space-x-4">
             <ProfileMenu />
@@ -187,7 +259,40 @@ function Analyze() {
         </nav>
       </header>
 
-      <main className="flex-grow pt-32 pb-20 px-8 max-w-7xl mx-auto w-full">
+      {/* SideNavBar */}
+      <aside className={`fixed left-0 top-0 h-full w-64 z-40 bg-slate-900 text-sm flex flex-col py-20 border-r border-white/5 transition-transform duration-300 ease-in-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} hidden lg:flex`}>
+        <div className="px-6 mb-10">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 rounded-xl primary-gradient flex items-center justify-center shadow-lg shadow-primary/20">
+              <span className="material-symbols-outlined text-on-primary">psychology</span>
+            </div>
+            <div>
+              <h2 className="text-slate-100 font-black text-base font-headline">AI Explorer</h2>
+              <p className="text-slate-500 text-xs font-label">Deep Dive Analysis</p>
+            </div>
+          </div>
+        </div>
+        <nav className="flex-1 space-y-2 px-4">
+          <Link className="flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-500 hover:text-slate-300 hover:bg-slate-800 transition-all font-label" to="/dashboard">
+            <span className="material-symbols-outlined">dashboard</span>
+            <span>Dashboard</span>
+          </Link>
+          <Link className="flex items-center space-x-3 px-4 py-3 rounded-lg bg-indigo-500/10 text-indigo-400 border-r-4 border-indigo-500 transition-all font-label" to="/analyze">
+            <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>add_circle</span>
+            <span>New Analysis</span>
+          </Link>
+          <Link className="flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-500 hover:text-slate-300 hover:bg-slate-800 transition-all font-label" to="/history">
+            <span className="material-symbols-outlined">history</span>
+            <span>Riwayat</span>
+          </Link>
+          <Link className="flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-500 hover:text-slate-300 hover:bg-slate-800 transition-all font-label" to="/profile">
+            <span className="material-symbols-outlined">person</span>
+            <span>Profile</span>
+          </Link>
+        </nav>
+      </aside>
+
+      <main className={`flex-grow pt-32 pb-20 px-8 max-w-7xl w-full transition-all duration-300 ${sidebarOpen ? 'lg:ml-64 mx-auto lg:mx-0' : 'mx-auto'}`}>
         {/* Analyzing State Header */}
         <div className="mb-12">
           <div className="flex items-center gap-3 mb-4">
@@ -406,18 +511,17 @@ function Analyze() {
 
       </main>
 
-      {/* Footer */}
-      <footer className="w-full py-12 px-8 bg-[#0b1326] border-t border-[#464554]/15">
+      {/* Universal CineSentia Footer */}
+      <footer className={`border-t border-white/5 bg-[#070d19] py-12 px-8 transition-all duration-300 ${sidebarOpen ? 'lg:ml-64' : 'lg:ml-0'}`}>
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="flex flex-col items-center md:items-start gap-2">
-            <span className="text-lg font-bold text-[#dae2fd]">CineSentia</span>
-            <p className="text-sm font-['Inter'] text-[#c7c4d7]">© 2024 CineSentia. The Abyssal Curator of Sentiment.</p>
+            <span className="text-lg font-bold tracking-tight text-[#dae2fd] uppercase font-headline">CineSentia</span>
+            <p className="text-xs text-slate-500 font-label">© 2024 CineSentia. Deep Ocean Cinematic Sentiment Analytics.</p>
           </div>
-          <div className="flex gap-8">
-            <a className="text-[#c7c4d7] hover:text-[#c0c1ff] transition-colors text-sm font-['Inter']" href="#">Privacy Policy</a>
-            <a className="text-[#c7c4d7] hover:text-[#c0c1ff] transition-colors text-sm font-['Inter']" href="#">Terms of Service</a>
-            <a className="text-[#c7c4d7] hover:text-[#c0c1ff] transition-colors text-sm font-['Inter']" href="#">API Documentation</a>
-            <a className="text-[#c7c4d7] hover:text-[#c0c1ff] transition-colors text-sm font-['Inter']" href="#">Support</a>
+          <div className="flex gap-8 text-xs font-label">
+            <Link className="text-slate-400 hover:text-indigo-400 transition-colors uppercase tracking-wider" to="/">Privacy Policy</Link>
+            <Link className="text-slate-400 hover:text-indigo-400 transition-colors uppercase tracking-wider" to="/">Terms of Service</Link>
+            <Link className="text-slate-400 hover:text-indigo-400 transition-colors uppercase tracking-wider" to="/">Support</Link>
           </div>
         </div>
       </footer>

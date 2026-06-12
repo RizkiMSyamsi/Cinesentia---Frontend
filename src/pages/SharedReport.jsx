@@ -17,7 +17,7 @@ function SharedReport() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-surface flex items-center justify-center">
+      <div className="min-h-screen bg-surface flex items-center justify-center overflow-x-hidden overflow-y-auto">
         <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
       </div>
     );
@@ -25,7 +25,7 @@ function SharedReport() {
 
   if (isError || !reportData) {
     return (
-      <div className="min-h-screen bg-surface flex items-center justify-center text-center">
+      <div className="min-h-screen bg-surface flex items-center justify-center text-center overflow-x-hidden overflow-y-auto">
         <div>
           <span className="material-symbols-outlined text-6xl text-error mb-4 block">error</span>
           <h1 className="text-2xl font-bold text-on-surface mb-2">Report Not Found</h1>
@@ -51,7 +51,7 @@ function SharedReport() {
   const formatDate = (d) => d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
 
   return (
-    <div className="bg-surface text-on-surface selection:bg-primary-container selection:text-on-primary-container min-h-screen">
+    <div className="bg-surface text-on-surface selection:bg-primary-container selection:text-on-primary-container min-h-screen overflow-x-hidden overflow-y-auto">
       {/* TopNavBar */}
       <nav className="fixed top-0 w-full z-50 bg-[#0b1326]/80 backdrop-blur-xl shadow-[0_20px_40px_rgba(0,0,0,0.4)]">
         <div className="flex justify-between items-center px-8 h-16 w-full max-w-7xl mx-auto">
@@ -182,8 +182,8 @@ function SharedReport() {
             <span className="text-sm text-[#c7c4d7]">© 2024 CineSentia. Deep Ocean Analytics.</span>
           </div>
           <div className="flex gap-8 text-sm">
-            <a className="text-[#c7c4d7] hover:text-[#dae2fd] transition-all" href="#">Privacy Policy</a>
-            <a className="text-[#c7c4d7] hover:text-[#dae2fd] transition-all" href="#">Terms of Service</a>
+            <Link className="text-[#c7c4d7] hover:text-[#dae2fd] transition-all" to="/">Privacy Policy</Link>
+            <Link className="text-[#c7c4d7] hover:text-[#dae2fd] transition-colors" to="/">Terms of Service</Link>
           </div>
         </div>
       </footer>

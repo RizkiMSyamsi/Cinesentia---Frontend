@@ -7,6 +7,7 @@ import Dashboard from './pages/Dashboard';
 import AnalysisDetail from './pages/AnalysisDetail';
 import Profile from './pages/Profile';
 import Analyze from './pages/Analyze';
+import History from './pages/History';
 import NotFound from './pages/NotFound';
 import SharedReport from './pages/SharedReport';
 import AuthPage from './pages/AuthPage';
@@ -24,6 +25,7 @@ function App() {
           <Route path="/analysis/:id" element={<ProtectedRoute><AnalysisDetail /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
           <Route path="/analyze" element={<ProtectedRoute><Analyze /></ProtectedRoute>} />
+          <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
           <Route path="/report/:token" element={<SharedReport />} />
           <Route path="*" element={<NotFound />} />
         </Routes>

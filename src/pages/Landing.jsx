@@ -3,16 +3,11 @@ import { Link } from 'react-router-dom';
 
 function Landing() {
   return (
-    <div className="overflow-x-hidden selection:bg-primary/30 min-h-screen font-body text-on-surface bg-background">
+    <div className="overflow-x-hidden overflow-y-auto selection:bg-primary/30 min-h-screen font-body text-on-surface bg-background">
       {/* TopNavBar */}
       <nav className="fixed top-0 w-full z-50 bg-slate-950/80 backdrop-blur-xl shadow-2xl shadow-black/40 flex justify-between items-center px-8 py-4 max-w-full mx-auto">
         <div className="flex items-center gap-8">
-          <span className="text-xl font-bold tracking-tighter text-slate-100 font-headline">CineSentia</span>
-          <div className="hidden md:flex gap-6 items-center">
-            <a className="text-indigo-300 font-semibold border-b-2 border-indigo-500 pb-1 tracking-tight" href="#">Dashboard</a>
-            <a className="text-slate-400 hover:text-slate-200 transition-colors tracking-tight hover:bg-white/5 px-3 py-1 rounded-lg" href="#">Features</a>
-            <a className="text-slate-400 hover:text-slate-200 transition-colors tracking-tight hover:bg-white/5 px-3 py-1 rounded-lg" href="#">About</a>
-          </div>
+          <Link to="/" className="text-xl font-bold tracking-tighter text-slate-100 font-headline">CineSentia</Link>
         </div>
         <div className="flex items-center gap-4">
           <Link className="text-slate-400 hover:text-slate-200 transition-colors px-4 py-2 text-sm font-medium" to="/login">Login</Link>
@@ -22,7 +17,7 @@ function Landing() {
 
       <main>
         {/* Hero Section */}
-        <section className="relative min-h-screen flex items-center pt-20 px-8 overflow-hidden">
+        <section className="relative min-h-screen flex items-center pt-20 px-8 overflow-x-hidden">
           {/* Decorative Atmosphere */}
           <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-primary/20 blur-[120px] rounded-full pointer-events-none"></div>
           <div className="absolute bottom-[-5%] left-[-5%] w-[400px] h-[400px] bg-tertiary-container/10 blur-[100px] rounded-full pointer-events-none"></div>
@@ -42,13 +37,10 @@ function Landing() {
               </p>
 
               <div className="flex flex-wrap gap-4 pt-4">
-                <button className="bg-gradient-primary text-on-primary-container px-8 py-4 rounded-xl font-bold text-lg hover:shadow-2xl hover:shadow-primary/20 transition-all flex items-center gap-3">
+                <Link to="/register" className="bg-gradient-primary text-on-primary-container px-8 py-4 rounded-xl font-bold text-lg hover:shadow-2xl hover:shadow-primary/20 transition-all flex items-center gap-3">
                   Mulai Sekarang
                   <span className="material-symbols-outlined">arrow_forward</span>
-                </button>
-                <button className="bg-surface-container-high text-primary px-8 py-4 rounded-xl font-bold text-lg hover:bg-surface-container-highest transition-all border border-outline-variant/10">
-                  Lihat Demo
-                </button>
+                </Link>
               </div>
             </div>
 
@@ -195,11 +187,6 @@ function Landing() {
 
       {/* Footer */}
       <footer className="w-full py-12 border-t border-white/5 bg-slate-950 flex flex-col items-center justify-center space-y-4">
-        <div className="flex gap-8 mb-6">
-          <a className="text-slate-600 hover:text-slate-100 transition-all text-xs uppercase tracking-widest font-label" href="#">Privacy Policy</a>
-          <a className="text-slate-600 hover:text-slate-100 transition-all text-xs uppercase tracking-widest font-label" href="#">Terms of Service</a>
-          <a className="text-slate-600 hover:text-slate-100 transition-all text-xs uppercase tracking-widest font-label" href="#">Support</a>
-        </div>
         <p className="text-slate-500 text-xs uppercase tracking-widest font-label">© 2024 CineSentia. Deep Ocean Analytics.</p>
         <div className="flex gap-4 pt-4">
           <span className="material-symbols-outlined text-slate-700 hover:text-primary transition-colors cursor-pointer">public</span>

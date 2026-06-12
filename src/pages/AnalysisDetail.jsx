@@ -4,13 +4,87 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../lib/api';
 import ProfileMenu from '../components/ProfileMenu';
 
+function parseInlineFormatting(text) {
+  if (!text) return '';
+  const parts = text.split(/(\*\*.*?\*\*)/g);
+  return parts.map((part, idx) => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      return (
+        <strong key={idx} className="font-extrabold text-white">
+          {part.slice(2, -2)}
+        </strong>
+      );
+    }
+    return part;
+  });
+}
+
+function formatMessageContent(content) {
+  if (!content) return '';
+  const paragraphs = content.split(/\n\n+/);
+  return paragraphs.map((para, pIdx) => {
+    const lines = para.split('\n');
+    const isList = lines.every(line => /^\s*([\*\-\u2022]|\d+\.)\s+/.test(line));
+    
+    if (lines.length > 1 && isList) {
+      return (
+        <ul key={pIdx} className="list-disc pl-6 space-y-2 my-3 text-slate-300 font-label">
+          {lines.map((line, lIdx) => {
+            const cleanLine = line.replace(/^\s*([\*\-\u2022]|\d+\.)\s+/, '');
+            return (
+              <li key={lIdx} className="leading-relaxed">
+                {parseInlineFormatting(cleanLine)}
+              </li>
+            );
+          })}
+        </ul>
+      );
+    }
+    
+    return (
+      <p key={pIdx} className="leading-relaxed mb-3 text-slate-200">
+        {lines.map((line, lIdx) => {
+          if (/^\s*([\*\-\u2022])\s+/.test(line)) {
+            const cleanLine = line.replace(/^\s*([\*\-\u2022])\s+/, '');
+            return (
+              <span key={lIdx} className="flex items-start gap-2 pl-4 my-1.5 text-slate-300">
+                <span className="text-indigo-400 font-bold">•</span>
+                <span className="flex-grow">{parseInlineFormatting(cleanLine)}</span>
+              </span>
+            );
+          }
+          if (/^\s*(\d+\.)\s+/.test(line)) {
+            const num = line.match(/^\s*(\d+\.)/)[1];
+            const cleanLine = line.replace(/^\s*(\d+\.)\s+/, '');
+            return (
+              <span key={lIdx} className="flex items-start gap-2 pl-4 my-1.5 text-slate-300">
+                <span className="text-indigo-400 font-bold font-mono">{num}</span>
+                <span className="flex-grow">{parseInlineFormatting(cleanLine)}</span>
+              </span>
+            );
+          }
+          return (
+            <React.Fragment key={lIdx}>
+              {parseInlineFormatting(line)}
+              {lIdx < lines.length - 1 && <br />}
+            </React.Fragment>
+          );
+        })}
+      </p>
+    );
+  });
+}
+
 function AnalysisDetail() {
   const { id } = useParams();
   const qc = useQueryClient();
   const chatEndRef = useRef(null);
   const [chatInput, setChatInput] = useState('');
   const [chatOpen, setChatOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [commentFilter, setCommentFilter] = useState(null);
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
 
   // Fetch analysis
   const { data: analysis, isLoading } = useQuery({
@@ -63,15 +137,23 @@ function AnalysisDetail() {
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [chatData]);
 
   const handleShare = async () => {
-    const result = await shareMutation.mutateAsync();
-    const url = `${window.location.origin}/report/${result.share_token}`;
-    await navigator.clipboard.writeText(url);
-    alert('Share link copied to clipboard!');
+    try {
+      const result = await shareMutation.mutateAsync();
+      const url = `${window.location.origin}/report/${result.share_token}`;
+      await navigator.clipboard.writeText(url);
+      setToastMessage('Link laporan berhasil disalin ke clipboard!');
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
+    } catch (err) {
+      setToastMessage('Gagal menyalin link laporan.');
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
+    }
   };
 
   if (isLoading || !analysis) {
     return (
-      <div className="min-h-screen bg-surface flex items-center justify-center">
+      <div className="min-h-screen bg-surface flex items-center justify-center overflow-x-hidden overflow-y-auto">
         <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
       </div>
     );
@@ -104,14 +186,14 @@ function AnalysisDetail() {
   };
 
   return (
-    <div className="bg-surface text-on-surface selection:bg-primary/30 min-h-screen">
+    <div className="bg-surface text-on-surface selection:bg-primary/30 min-h-screen overflow-x-hidden overflow-y-auto">
       {/* TopNavBar */}
       <nav className="fixed top-0 w-full z-50 bg-slate-950/80 backdrop-blur-xl flex justify-between items-center px-8 py-4 shadow-2xl shadow-black/40 tracking-tight">
-        <div className="text-xl font-bold tracking-tighter text-slate-100 uppercase">CineSentia</div>
-        <div className="hidden md:flex items-center space-x-8">
-          <Link className="text-slate-400 hover:text-slate-200 transition-colors" to="/dashboard">Dashboard</Link>
-          <a className="text-slate-400 hover:text-slate-200 transition-colors" href="#">Features</a>
-          <a className="text-slate-400 hover:text-slate-200 transition-colors" href="#">About</a>
+        <div className="flex items-center gap-4">
+          <button onClick={() => setSidebarOpen(!sidebarOpen)} className="hidden md:flex items-center justify-center p-2 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-white/5 transition-colors">
+            <span className="material-symbols-outlined">menu</span>
+          </button>
+          <Link to="/dashboard" className="text-xl font-bold tracking-tighter text-slate-100 uppercase">CineSentia</Link>
         </div>
         <div className="flex items-center space-x-4">
           <ProfileMenu />
@@ -119,7 +201,7 @@ function AnalysisDetail() {
       </nav>
 
       {/* SideNavBar (Desktop) */}
-      <aside className="fixed left-0 top-0 h-full w-64 z-40 bg-slate-900 flex flex-col py-20 text-sm hidden md:flex">
+      <aside className={`fixed left-0 top-0 h-full w-64 z-40 bg-slate-900 flex flex-col py-20 text-sm hidden md:flex transition-transform duration-300 ease-in-out border-r border-white/5 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="px-6 mb-8">
           <div className="flex items-center space-x-3 mb-6">
             <div className="w-10 h-10 rounded-xl abyssal-gradient flex items-center justify-center text-on-primary">
@@ -135,18 +217,24 @@ function AnalysisDetail() {
             <span>New Analysis</span>
           </Link>
         </div>
-        <nav className="flex-1 space-y-1">
+        <nav className="flex-1 space-y-1 mt-4">
           <Link className="flex items-center px-6 py-3 text-slate-500 hover:text-slate-300 transition-all hover:bg-slate-800" to="/dashboard">
-            <span className="material-symbols-outlined mr-3">analytics</span><span>Sentiments</span>
+            <span className="material-symbols-outlined mr-3">dashboard</span><span>Dashboard</span>
           </Link>
-          <a className="flex items-center px-6 py-3 bg-indigo-500/10 text-indigo-400 border-r-4 border-indigo-500" href="#">
-            <span className="material-symbols-outlined mr-3">psychology</span><span>AI Explorer</span>
-          </a>
+          <Link className="flex items-center px-6 py-3 text-slate-500 hover:text-slate-300 transition-all hover:bg-slate-800" to="/analyze">
+            <span className="material-symbols-outlined mr-3">add_circle</span><span>New Analysis</span>
+          </Link>
+          <Link className="flex items-center px-6 py-3 text-slate-500 hover:text-slate-300 transition-all hover:bg-slate-800" to="/history">
+            <span className="material-symbols-outlined mr-3">history</span><span>Riwayat</span>
+          </Link>
+          <Link className="flex items-center px-6 py-3 text-slate-500 hover:text-slate-300 transition-all hover:bg-slate-800" to="/profile">
+            <span className="material-symbols-outlined mr-3">person</span><span>Profile</span>
+          </Link>
         </nav>
       </aside>
 
       {/* Main Content Area */}
-      <main className={`pt-24 pb-12 px-6 md:ml-64 transition-all duration-300 ${chatOpen ? 'lg:mr-[400px]' : ''}`}>
+      <main className={`pt-24 pb-12 px-6 transition-all duration-300 ${sidebarOpen ? 'md:ml-64' : 'md:ml-0'} ${chatOpen ? 'lg:mr-[400px]' : ''}`}>
         {/* Header Section */}
         <header className="mb-10 flex flex-col lg:flex-row lg:items-end justify-between gap-6">
           <div className="flex flex-col md:flex-row gap-6 items-start">
@@ -174,7 +262,7 @@ function AnalysisDetail() {
                   <span className="material-symbols-outlined text-sm">{shareMutation.isSuccess ? 'check' : 'share'}</span>
                   <span className="text-sm font-semibold">{shareMutation.isSuccess ? 'Copied!' : 'Share Report'}</span>
                 </button>
-                <button onClick={() => setChatOpen(!chatOpen)} className="px-4 py-2 rounded-lg abyssal-gradient text-on-primary flex items-center space-x-2 transition-all lg:hidden">
+                <button onClick={() => setChatOpen(!chatOpen)} className="px-4 py-2 rounded-lg abyssal-gradient text-on-primary flex items-center space-x-2 transition-all">
                   <span className="material-symbols-outlined text-sm">chat</span>
                   <span className="text-sm font-semibold">Tanya Chatbot</span>
                 </button>
@@ -308,7 +396,7 @@ function AnalysisDetail() {
       </main>
 
       {/* Chatbot Right Panel */}
-      <aside className={`fixed right-0 top-0 h-full w-full lg:w-[400px] bg-slate-950 border-l border-white/5 z-50 flex flex-col shadow-2xl transition-transform duration-300 ${chatOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'}`}>
+      <aside className={`fixed right-0 top-0 h-full w-full lg:w-[400px] bg-slate-950 border-l border-white/5 z-50 flex flex-col shadow-2xl transition-transform duration-300 ${chatOpen ? 'translate-x-0' : 'translate-x-full'}`}>
         <div className="p-6 border-b border-white/5 flex items-center justify-between bg-slate-900/50">
           <div className="flex items-center space-x-3">
             <div className="w-8 h-8 rounded-lg bg-indigo-500/20 flex items-center justify-center text-indigo-400">
@@ -319,7 +407,7 @@ function AnalysisDetail() {
               <p className="text-[10px] text-slate-500 uppercase tracking-widest">AI Analyst Assistant</p>
             </div>
           </div>
-          <button className="lg:hidden text-slate-400" onClick={() => setChatOpen(false)}>
+          <button className="text-slate-400" onClick={() => setChatOpen(false)}>
             <span className="material-symbols-outlined">close</span>
           </button>
         </div>
@@ -344,26 +432,12 @@ function AnalysisDetail() {
                 ? 'abyssal-gradient text-on-primary p-4 rounded-2xl rounded-tr-none text-sm leading-relaxed shadow-lg'
                 : 'bg-surface-container p-4 rounded-2xl rounded-tl-none text-sm leading-relaxed border border-white/5'
               }>
-                {msg.content}
+                {msg.role === 'user' ? msg.content : formatMessageContent(msg.content)}
               </div>
             </div>
           ))}
 
-          {/* Latest bot reply with sources */}
-          {chatMutation.isSuccess && chatMutation.data && (
-            <>
-              {chatMutation.data.sources && chatMutation.data.sources.length > 0 && (
-                <div className="flex flex-wrap gap-1 ml-2">
-                  {chatMutation.data.sources.slice(0, 3).map((src, i) => (
-                    <span key={i} className="text-[9px] px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">
-                      📎 Source {i + 1}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </>
-          )}
-
+          {/* Latest bot reply */}
           {chatMutation.isPending && (
             <div className="flex flex-col space-y-2 items-start max-w-[85%]">
               <div className="bg-surface-container p-4 rounded-2xl rounded-tl-none border border-white/5 flex items-center gap-2">
@@ -400,10 +474,35 @@ function AnalysisDetail() {
         </div>
       </aside>
 
-      {/* Footer */}
-      <footer className={`md:ml-64 ${chatOpen ? 'lg:mr-[400px]' : ''} py-12 border-t border-white/5 bg-slate-950 flex flex-col items-center justify-center space-y-4 w-full`}>
-        <p className="text-xs uppercase tracking-widest text-slate-500">© 2024 CineSentia. Deep Ocean Analytics.</p>
+      {/* Universal CineSentia Footer */}
+      <footer className={`border-t border-white/5 bg-[#070d19] py-12 px-8 transition-all duration-300 ${sidebarOpen ? 'md:ml-64' : 'md:ml-0'} ${chatOpen ? 'lg:mr-[400px]' : ''}`}>
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
+          <div className="flex flex-col items-center md:items-start gap-2">
+            <span className="text-lg font-bold tracking-tight text-[#dae2fd] uppercase font-headline">CineSentia</span>
+            <p className="text-xs text-slate-500 font-label">© 2024 CineSentia. Deep Ocean Cinematic Sentiment Analytics.</p>
+          </div>
+          <div className="flex gap-8 text-xs font-label">
+            <Link className="text-slate-400 hover:text-indigo-400 transition-colors uppercase tracking-wider" to="/">Privacy Policy</Link>
+            <Link className="text-slate-400 hover:text-indigo-400 transition-colors uppercase tracking-wider" to="/">Terms of Service</Link>
+            <Link className="text-slate-400 hover:text-indigo-400 transition-colors uppercase tracking-wider" to="/">Support</Link>
+          </div>
+        </div>
       </footer>
+
+      {/* Modern Toast Notification */}
+      <div 
+        className={`fixed bottom-8 right-8 z-[100] transition-all duration-500 transform ${showToast ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-4 scale-95 pointer-events-none'}`}
+      >
+        <div className="bg-slate-950/95 border border-indigo-500/30 text-slate-100 px-6 py-4 rounded-xl shadow-[0_20px_50px_rgba(99,102,241,0.25)] flex items-center space-x-3 backdrop-blur-xl border border-white/5">
+          <div className="w-8 h-8 rounded-lg bg-indigo-500/20 flex items-center justify-center text-indigo-400">
+            <span className="material-symbols-outlined text-lg">check_circle</span>
+          </div>
+          <div>
+            <p className="text-sm font-bold tracking-tight text-white font-headline">Sukses Berbagi</p>
+            <p className="text-xs text-slate-400 font-label">{toastMessage}</p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
